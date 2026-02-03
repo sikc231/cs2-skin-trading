@@ -1,1 +1,0 @@
-cash_balance: float = 0.0
