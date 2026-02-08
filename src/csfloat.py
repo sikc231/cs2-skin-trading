@@ -4,16 +4,17 @@ import asyncio
 from playwright.async_api import async_playwright, expect
 
 class CsFloat:
-    def __init__(self):
+    def __init__(self, min_price: float):
         self.playwright = None
         self.browser = None
         self.context = None
         self.page = None
         self.current_login_try = 1
         self.max_login_tries = 5
+        self.min_price = min_price
         self.steam_confirmation_timeout = 30000
         self.balance = 0
-    
+
     def getBalance(self) -> float:
         return self.balance
 
@@ -29,6 +30,9 @@ class CsFloat:
                 await self.context.add_cookies(cookies)
         else:
             print("No cookies found, starting fresh")
+    def getBalance(self) -> float:
+        return self.balance
+
         
     async def start(self):
         
@@ -44,6 +48,7 @@ class CsFloat:
         print('loggedIn')
 
         await self.validate_login()
+        await self.updateBalance()
 
         print("CsFloat started and ready.")
   # Keep the browser open for your work here
@@ -145,28 +150,34 @@ class CsFloat:
 
     async def updateBalance(self) -> float:
         await self.validate_login()
-        #headers = {
-        #    'Content-Type': 'application/json',
-        #    'Origin': 'https://csfloat.com',
-        #    'Cookie': ''
-        #}
-        #cookies = await self.context.cookies()
-        #for (cookie) in cookies:
-        #    if cookie["name"] == '__stripe_mid':
-        #        headers['Cookie'] = headers['Cookie'] + '__stripe_mid=' + cookie["value"] + ';'
-        #        break
-
-        #for (cookie) in cookies:
-        #    if cookie["name"] == 'session':
-        #        headers['Cookie'] = headers['Cookie'] + 'session=' + cookie["value"] + ';'
-        #        break
-
+        
         try:
             response = await self.page.request.fetch('https://csfloat.com/api/v1/me', method="GET")
             data = await response.json()
             csfloat_balance: float = data["user"]["balance"] / 100
-            self.balance = csfloat_balance
+            self.balance = data["user"]["balance"] 
             return csfloat_balance
         except Exception as e:
             print("Error fetching balance:", e)
         return 0.0
+    
+
+
+    async def fetch_deals(self):
+        print("Fetching Deals...")
+        print("Current Balance for fetching deals:", str(self.balance))
+        NewOffersQeuryLink = "https://csfloat.com/api/v1/listings?limit=50&sort_by=most_recent&min_price=" + str(self.min_price) + "&max_price=" + str(self.balance) + "&type=buy_now"
+        BestOffersQueryLink = "https://csfloat.com/api/v1/listings?limit=50&sort_by=best_deal&min_price=" + str(self.min_price) + "&max_price=" + str(self.balance) + "&type=buy_now"
+        try:
+            new_offers_response = await self.page.request.get(NewOffersQeuryLink)
+            new_offers_data = await new_offers_response.json()
+            print("New Offers Response:")
+            print(new_offers_data)
+            
+            best_offers_response = await self.page.request.get(BestOffersQueryLink)
+            best_offers_data = await best_offers_response.json()
+            print("Best Offers Response:")
+            print(best_offers_data)
+            
+        except Exception as e:
+            print(f"Error fetching deals: {e}")
