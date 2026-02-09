@@ -2,3 +2,4 @@ python-dotenv
 playwright
 requests
 env
+asyncpg

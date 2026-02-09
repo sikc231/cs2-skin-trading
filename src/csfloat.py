@@ -171,13 +171,42 @@ class CsFloat:
         try:
             new_offers_response = await self.page.request.get(NewOffersQeuryLink)
             new_offers_data = await new_offers_response.json()
-            print("New Offers Response:")
-            print(new_offers_data)
+            for offer in new_offers_data["data"]:
+            #item.id = dataLatest[i].id;
+            #item.price = dataLatest[i].price;
+            #item.wear_name = dataLatest[i].item.wear_name;
+            #item.item_name = dataLatest[i].item.item_name;
+            #item.type_name = dataLatest[i].item.type_name;
+            #item.full_name = item.item_name + " (" + item.wear_name + ")";
+            #item.market_hash = dataLatest[i].item.market_hash_name;
+            #item.float = dataLatest[i].item.float_value;
+                id          = offer["id"]
+                price       = offer["price"]
+                wear_name   = offer["item"]["wear_name"]
+                item_name   = offer["item"]["item_name"]
+                type_name   = offer["item"]["type_name"]
+                full_name   = item_name + " (" + wear_name + ")"
+                market_hash = offer["item"]["market_hash_name"]
+                float       =  offer["item"]["float_value"]
+
+                print(id)
+                print(price)
+                print(wear_name)
+                print(item_name)
+                print(type_name)
+                print(full_name)
+                print(market_hash)
+                print(float)
+                print('-----------------------------')
+                
             
-            best_offers_response = await self.page.request.get(BestOffersQueryLink)
-            best_offers_data = await best_offers_response.json()
-            print("Best Offers Response:")
-            print(best_offers_data)
+            #best_offers_response = await self.page.request.get(BestOffersQueryLink)
+            #best_offers_data = await best_offers_response.json()
+            #print("Best Offers Response:")
+            #print(best_offers_data)
             
         except Exception as e:
             print(f"Error fetching deals: {e}")
+
+        print(NewOffersQeuryLink)
+        print(BestOffersQueryLink)

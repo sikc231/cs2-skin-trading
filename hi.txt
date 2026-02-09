@@ -1,0 +1,6 @@
+PROXY_DOWNLOAD_LINK=https://proxy.webshare.io/api/v2/proxy/list/download/ctpzbsddxbdytsxsnboptwhthdmyyyiubdomvgng/-/any/username/direct/-/?plan_id=12436786
+PROXY_PASSWORD=34tkkilz205t
+PROXY_USERNAME=bmbdwrjb
+DATABASE_IP=91.99.168.148
+DATABASE_USER=postgres
+DATABASE_PASSWORD=Akebabas!
