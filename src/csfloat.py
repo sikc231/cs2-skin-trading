@@ -179,6 +179,8 @@ class CsFloat:
             new_offers_data = await new_offers_response.json()
             best_offers_response = await self.page.request.get(BestOffersQueryLink)
             best_offers_data = await best_offers_response.json()
+            print("new_offers_data:", new_offers_data)
+            print("best_offers_data:", best_offers_data)
 
             # Remove expired IDs from sent_offer_ids
             now = time.time()
