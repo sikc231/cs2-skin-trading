@@ -46,4 +46,4 @@ COPY . .
 EXPOSE 8000
 
 # Set default command (update as needed)
-CMD ["python", "main.py"]
+CMD ["python3", "-u", "main.py"]
