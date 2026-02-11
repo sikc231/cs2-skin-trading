@@ -36,6 +36,7 @@ RUN apt-get update && \
 COPY req.txt ./
 
 # Install Python dependencies
+RUN pip install playwright && playwright install --with-deps chromium
 RUN pip install --no-cache-dir -r req.txt
 
 # Copy project files
