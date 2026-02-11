@@ -14,7 +14,9 @@ async def run() -> None:
     await cs.initialize()
     await cs.start()
 
-    await cs.fetch_deals()
+    while True:
+        await cs.fetch_deals()
+        await asyncio.sleep(60)  # 5 minutes
 
     #ProxyService.initialize()
     #print("Total Proxies Loaded:", ProxyService.get_proxy_count())

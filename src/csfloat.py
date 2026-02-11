@@ -1,8 +1,10 @@
 import json
 import os
 import asyncio
+import aiohttp
 from playwright.async_api import async_playwright, expect
-
+from src.db import Database, Cs2Skin
+import time
 class CsFloat:
     def __init__(self, min_price: float):
         self.playwright = None
@@ -14,6 +16,9 @@ class CsFloat:
         self.min_price = min_price
         self.steam_confirmation_timeout = 30000
         self.balance = 0
+        import time
+        self.sent_offer_ids = {}  # id: timestamp
+        self.offer_id_expiry_seconds = 24 * 60 * 60  # 24 hours
 
     def getBalance(self) -> float:
         return self.balance
@@ -168,43 +173,100 @@ class CsFloat:
         print("Current Balance for fetching deals:", str(self.balance))
         NewOffersQeuryLink = "https://csfloat.com/api/v1/listings?limit=50&sort_by=most_recent&min_price=" + str(self.min_price) + "&max_price=" + str(self.balance) + "&type=buy_now"
         BestOffersQueryLink = "https://csfloat.com/api/v1/listings?limit=50&sort_by=best_deal&min_price=" + str(self.min_price) + "&max_price=" + str(self.balance) + "&type=buy_now"
+
         try:
             new_offers_response = await self.page.request.get(NewOffersQeuryLink)
             new_offers_data = await new_offers_response.json()
-            for offer in new_offers_data["data"]:
-            #item.id = dataLatest[i].id;
-            #item.price = dataLatest[i].price;
-            #item.wear_name = dataLatest[i].item.wear_name;
-            #item.item_name = dataLatest[i].item.item_name;
-            #item.type_name = dataLatest[i].item.type_name;
-            #item.full_name = item.item_name + " (" + item.wear_name + ")";
-            #item.market_hash = dataLatest[i].item.market_hash_name;
-            #item.float = dataLatest[i].item.float_value;
-                id          = offer["id"]
-                price       = offer["price"]
-                wear_name   = offer["item"]["wear_name"]
-                item_name   = offer["item"]["item_name"]
-                type_name   = offer["item"]["type_name"]
-                full_name   = item_name + " (" + wear_name + ")"
-                market_hash = offer["item"]["market_hash_name"]
-                float       =  offer["item"]["float_value"]
+            best_offers_response = await self.page.request.get(BestOffersQueryLink)
+            best_offers_data = await best_offers_response.json()
 
-                print(id)
-                print(price)
-                print(wear_name)
-                print(item_name)
-                print(type_name)
-                print(full_name)
-                print(market_hash)
-                print(float)
-                print('-----------------------------')
+            # Remove expired IDs from sent_offer_ids
+            now = time.time()
+            expired_ids = [oid for oid, ts in self.sent_offer_ids.items() if now - ts > self.offer_id_expiry_seconds]
+            for oid in expired_ids:
+                del self.sent_offer_ids[oid]
+
+            # Mesh arrays and deduplicate by 'id'
+            all_offers = new_offers_data["data"] + best_offers_data["data"]
+            unique_offers = {}
+            for offer in all_offers:
+                offer_id = offer.get("id")
+                if offer_id not in unique_offers:
+                    unique_offers[offer_id] = offer
+
+            for offer in unique_offers.values():
+                id          = offer["id"]
+                # Skip if already sent (and not expired)
+                if id in self.sent_offer_ids:
+                    continue
+                price       = offer["price"]
+                wear_name   = ""
+                item_name   = ""
+                type_name   = ""
+                float       = 0.0
+                try:
+                    wear_name   = offer["item"]["wear_name"]
+                    item_name   = offer["item"]["item_name"]
+                    type_name   = offer["item"]["type_name"]
+                    float       =  offer["item"]["float_value"]
+                except:
+                    None
+
+                full_name   = item_name
+                if wear_name:
+                    full_name = full_name + " (" + wear_name + ")"
+                market_hash = offer["item"]["market_hash_name"]
+
+                dbItem = await Database.get_skin_by_market_hash(market_hash)
+                if not dbItem:
+                    continue
+
+                dbItemPrice = dbItem.price
+                if not dbItemPrice and dbItemPrice < 0.1:
+                    continue
+
+                dbItemPrice = dbItemPrice * 100
+                priceDiff = dbItemPrice - price
+                priceDiffPercent = (priceDiff / dbItemPrice) * 100
+
+                if priceDiffPercent > 65:
+                    # Send notification to Discord webhook
+                    webhook_url = "https://discord.com/api/webhooks/1470903534105919521/Vyo-gyR8Gr9DNT1E7jWZpq8Cg3EqbTld8IHbVPFs_K8JvY2eCuE0ZG8RSig-x-DXuBgn"
+                    content = (
+                        f"**New Offer Alert!**\n"
+                        f"Market Hash: {market_hash}\n"
+                        f"Price: {price}\n"
+                        f"DB Price: {dbItemPrice}\n"
+                        f"Diff: {priceDiff}\n"
+                        f"Diff%: {priceDiffPercent:.2f}%\n"
+                        f"Item: {full_name}\n"
+                        f"Float: {float}\n"
+                        f"Offer Link: https://csfloat.com/item/{id}"
+                    )
+                    try:
+                        import aiohttp
+                        async with aiohttp.ClientSession() as session:
+                            await session.post(webhook_url, json={"content": content})
+                        # Add to cache after sending, with timestamp
+                        self.sent_offer_ids[id] = time.time()
+                    except Exception as e:
+                        print(f"Failed to send Discord webhook: {e}")
+                #print(f"Offer: {market_hash} | Price: {price} | DB Price: {dbItemPrice} | Diff: {priceDiff} | Diff%: {priceDiffPercent:.2f}%")
+
+
+
                 
-            
-            #best_offers_response = await self.page.request.get(BestOffersQueryLink)
-            #best_offers_data = await best_offers_response.json()
-            #print("Best Offers Response:")
-            #print(best_offers_data)
-            
+
+                #print("id: ", id)
+                #print("price: ", price)
+                #print("wear_name: ", wear_name)
+                #print("item_name: ", item_name)
+                #print("type_name: ", type_name)
+                #print("full_name: ", full_name)
+                #print("market_hash: ", market_hash)
+                #print("float: ", float)
+                #print('-----------------------------')
+                 
         except Exception as e:
             print(f"Error fetching deals: {e}")
 
