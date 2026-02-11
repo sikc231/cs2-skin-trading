@@ -12,7 +12,7 @@ RUN apt-get update && \
         git \
         libglib2.0-0 \
         libnss3 \
-        libgconf-2-4 \
+        # libgconf-2-4 removed (not available in Debian trixie) \
         libfontconfig1 \
         libxss1 \
         libasound2 \
