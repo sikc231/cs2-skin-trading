@@ -1,6 +1,6 @@
 import asyncio
 from src.csfloat import CsFloat
-from src.proxy import ProxyService
+#from src.proxy import ProxyService
 from src.db import Database
 from dotenv import load_dotenv
 load_dotenv()

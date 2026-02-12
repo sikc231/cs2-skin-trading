@@ -239,10 +239,14 @@ class CsFloat:
                 #dbItemPrice = dbItemPrice * 100
                 #priceDiff = dbItemPrice - price
                 #priceDiffPercent = (priceDiff / dbItemPrice) * 100
-                priceDiff = predicted_price - price
-                priceDiffPercent = (priceDiff / predicted_price) * 100
+                priceDiffBase = base_price - price
+                priceDiffPercentBase = (priceDiffBase / base_price) * 100
 
-                if priceDiffPercent > 25:
+                priceDiffPredicted = predicted_price - price
+                priceDiffPercentPredicted = (priceDiffPredicted / predicted_price) * 100
+
+
+                if priceDiffPercentBase > 25 or priceDiffPercentPredicted > 25:
                     # Send notification to Discord webhook
                     webhook_url = "https://discord.com/api/webhooks/1470903534105919521/Vyo-gyR8Gr9DNT1E7jWZpq8Cg3EqbTld8IHbVPFs_K8JvY2eCuE0ZG8RSig-x-DXuBgn"
                     content = (
@@ -251,9 +255,13 @@ class CsFloat:
                         f"Price: {price}\n"
                         f"Predicted Price: {predicted_price}\n"
                         f"Base Price: {base_price}\n"
+                        f"Diff (base): {priceDiffBase}\n"
+                        f"Diff% (base): {priceDiffPercentBase:.2f}%\n"
+                        f"Diff (predicted): {priceDiffPredicted}\n"
+                        f"Diff% (predicted): {priceDiffPercentPredicted:.2f}%\n"
                         #f"DB Price: {dbItemPrice}\n"
-                        f"Diff: {priceDiff}\n"
-                        f"Diff%: {priceDiffPercent:.2f}%\n"
+                        #f"Diff: {priceDiff}\n"
+                        #f"Diff%: {priceDiffPercent:.2f}%\n"
                         f"Item: {full_name}\n"
                         f"Float: {float}\n"
                         f"Offer Link: https://csfloat.com/item/{id}"
