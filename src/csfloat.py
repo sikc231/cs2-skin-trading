@@ -16,7 +16,6 @@ class CsFloat:
         self.min_price = min_price
         self.steam_confirmation_timeout = 30000
         self.balance = 0
-        import time
         self.sent_offer_ids = {}  # id: timestamp
         self.offer_id_expiry_seconds = 24 * 60 * 60  # 24 hours
 
@@ -25,7 +24,16 @@ class CsFloat:
 
     async def initialize(self):
         self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(headless=True)
+        self.browser = await self.playwright.chromium.launch(headless=True,
+                                                             args=[
+                                                                "--disable-gpu",
+                                                                "--no-sandbox",
+                                                                "--disable-dev-shm-usage",
+                                                                "--disable-software-rasterizer",
+                                                                "--disable-background-timer-throttling",
+                                                                "--disable-backgrounding-occluded-windows",
+                                                                "--disable-renderer-backgrounding"
+                                                            ])
         self.context = await self.browser.new_context()
         self.page = await self.context.new_page()
         if os.path.exists("./data/cookies.json"):
@@ -179,8 +187,6 @@ class CsFloat:
             new_offers_data = await new_offers_response.json()
             best_offers_response = await self.page.request.get(BestOffersQueryLink)
             best_offers_data = await best_offers_response.json()
-            print("new_offers_data:", new_offers_data)
-            print("best_offers_data:", best_offers_data)
 
             # Remove expired IDs from sent_offer_ids
             now = time.time()
@@ -206,6 +212,9 @@ class CsFloat:
                 item_name   = ""
                 type_name   = ""
                 float       = 0.0
+                base_price  = offer["reference"]["base_price"]
+                predicted_price = offer["reference"]["predicted_price"]
+                
                 try:
                     wear_name   = offer["item"]["wear_name"]
                     item_name   = offer["item"]["item_name"]
@@ -220,25 +229,29 @@ class CsFloat:
                 market_hash = offer["item"]["market_hash_name"]
 
                 dbItem = await Database.get_skin_by_market_hash(market_hash)
-                if not dbItem:
-                    continue
+                #if not dbItem:
+                #    continue
 
-                dbItemPrice = dbItem.price
-                if not dbItemPrice and dbItemPrice < 0.1:
-                    continue
+                #dbItemPrice = dbItem.price
+                #if not dbItemPrice and dbItemPrice < 0.1:
+                #    continue
 
-                dbItemPrice = dbItemPrice * 100
-                priceDiff = dbItemPrice - price
-                priceDiffPercent = (priceDiff / dbItemPrice) * 100
+                #dbItemPrice = dbItemPrice * 100
+                #priceDiff = dbItemPrice - price
+                #priceDiffPercent = (priceDiff / dbItemPrice) * 100
+                priceDiff = predicted_price - price
+                priceDiffPercent = (priceDiff / predicted_price) * 100
 
-                if priceDiffPercent > 65:
+                if priceDiffPercent > 25:
                     # Send notification to Discord webhook
                     webhook_url = "https://discord.com/api/webhooks/1470903534105919521/Vyo-gyR8Gr9DNT1E7jWZpq8Cg3EqbTld8IHbVPFs_K8JvY2eCuE0ZG8RSig-x-DXuBgn"
                     content = (
                         f"**New Offer Alert!**\n"
                         f"Market Hash: {market_hash}\n"
                         f"Price: {price}\n"
-                        f"DB Price: {dbItemPrice}\n"
+                        f"Predicted Price: {predicted_price}\n"
+                        f"Base Price: {base_price}\n"
+                        #f"DB Price: {dbItemPrice}\n"
                         f"Diff: {priceDiff}\n"
                         f"Diff%: {priceDiffPercent:.2f}%\n"
                         f"Item: {full_name}\n"
