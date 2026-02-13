@@ -18,6 +18,8 @@ class CsFloat:
         self.balance = 0
         self.sent_offer_ids = {}  # id: timestamp
         self.offer_id_expiry_seconds = 24 * 60 * 60  # 24 hours
+        self.lowBalanceTryCount = 0
+        self.lowBalanceTryLimit = 5
 
     def getBalance(self) -> float:
         return self.balance
@@ -179,6 +181,17 @@ class CsFloat:
     async def fetch_deals(self):
         print("Fetching Deals...")
         print("Current Balance for fetching deals:", str(self.balance))
+        if self.lowBalanceTryCount >= self.lowBalanceTryLimit:
+            await self.validate_login()
+            await self.updateBalance()
+            self.lowBalanceTryCount = 0
+
+        if self.balance < self.min_price:
+            print(f"Balance {self.balance} is below minimum price {self.min_price}, skipping fetch.")
+            self.lowBalanceTryCount = self.lowBalanceTryCount + 1
+            return
+        
+        self.lowBalanceTryCount = 0
         NewOffersQeuryLink = "https://csfloat.com/api/v1/listings?limit=50&sort_by=most_recent&min_price=" + str(self.min_price) + "&max_price=" + str(self.balance) + "&type=buy_now"
         BestOffersQueryLink = "https://csfloat.com/api/v1/listings?limit=50&sort_by=best_deal&min_price=" + str(self.min_price) + "&max_price=" + str(self.balance) + "&type=buy_now"
 
@@ -232,33 +245,34 @@ class CsFloat:
                 #if not dbItem:
                 #    continue
 
-                #dbItemPrice = dbItem.price
+                dbItemPrice = dbItem.price
                 #if not dbItemPrice and dbItemPrice < 0.1:
                 #    continue
 
-                #dbItemPrice = dbItemPrice * 100
-                #priceDiff = dbItemPrice - price
-                #priceDiffPercent = (priceDiff / dbItemPrice) * 100
+                dbItemPrice = dbItemPrice * 100
+                priceDiff = dbItemPrice - price
+                priceDiffPercent = (priceDiff / dbItemPrice) * 100
                 priceDiffBase = base_price - price
                 priceDiffPercentBase = (priceDiffBase / base_price) * 100
 
-                priceDiffPredicted = predicted_price - price
-                priceDiffPercentPredicted = (priceDiffPredicted / predicted_price) * 100
 
 
-                if priceDiffPercentBase > 25 or priceDiffPercentPredicted > 25:
+
+                if priceDiffPercentBase > 25 or priceDiffPercent > 50:
                     # Send notification to Discord webhook
                     webhook_url = "https://discord.com/api/webhooks/1470903534105919521/Vyo-gyR8Gr9DNT1E7jWZpq8Cg3EqbTld8IHbVPFs_K8JvY2eCuE0ZG8RSig-x-DXuBgn"
                     content = (
                         f"**New Offer Alert!**\n"
                         f"Market Hash: {market_hash}\n"
                         f"Price: {price}\n"
-                        f"Predicted Price: {predicted_price}\n"
-                        f"Base Price: {base_price}\n"
-                        f"Diff (base): {priceDiffBase}\n"
+                        f"DB Price: ${dbItemPrice / 100}\n"
+                        f"Diff: ${priceDiff / 100}\n"
+                        f"Diff%: {priceDiffPercent:.2f}%\n"
+                        f"Base Price: ${base_price / 100}\n"
+                        f"Diff (base): ${priceDiffBase / 100}\n"
                         f"Diff% (base): {priceDiffPercentBase:.2f}%\n"
-                        f"Diff (predicted): {priceDiffPredicted}\n"
-                        f"Diff% (predicted): {priceDiffPercentPredicted:.2f}%\n"
+                        #f"Diff (predicted): {priceDiffPredicted}\n"
+                        #f"Diff% (predicted): {priceDiffPercentPredicted:.2f}%\n"
                         #f"DB Price: {dbItemPrice}\n"
                         #f"Diff: {priceDiff}\n"
                         #f"Diff%: {priceDiffPercent:.2f}%\n"

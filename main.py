@@ -10,7 +10,7 @@ async def run() -> None:
 
     await Database.init()
 
-    cs = CsFloat(10)
+    cs = CsFloat(100)
     await cs.initialize()
     await cs.start()
 
