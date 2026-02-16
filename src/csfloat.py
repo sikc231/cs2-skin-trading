@@ -258,7 +258,7 @@ class CsFloat:
 
 
 
-                if priceDiffPercentBase > 20 and priceDiffPercent > 40:
+                if (priceDiffPercentBase > 20 and priceDiffPercent > 40) or priceDiffPercentBase > 20:
                     # Send notification to Discord webhook
                     webhook_url = "https://discord.com/api/webhooks/1470903534105919521/Vyo-gyR8Gr9DNT1E7jWZpq8Cg3EqbTld8IHbVPFs_K8JvY2eCuE0ZG8RSig-x-DXuBgn"
                     content = (
