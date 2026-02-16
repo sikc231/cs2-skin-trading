@@ -258,19 +258,20 @@ class CsFloat:
 
 
 
-                if priceDiffPercentBase > 25 or priceDiffPercent > 50:
+                if priceDiffPercentBase > 20 and priceDiffPercent > 40:
                     # Send notification to Discord webhook
                     webhook_url = "https://discord.com/api/webhooks/1470903534105919521/Vyo-gyR8Gr9DNT1E7jWZpq8Cg3EqbTld8IHbVPFs_K8JvY2eCuE0ZG8RSig-x-DXuBgn"
                     content = (
                         f"**New Offer Alert!**\n"
-                        f"Market Hash: {market_hash}\n"
+                        f"Market Hash: __{market_hash}__\n"
                         f"---------------------------------"
-                        f"Price: ${price / 100}\n"
-                        f"DB Price: ${dbItemPrice / 100}\n"
+                        f"Price: **${price / 100}**\n"
+                        f"---------------------------------"
+                        f"DB Price: ***${dbItemPrice / 100}***\n"
                         f"Diff: ${priceDiff / 100}\n"
                         f"Diff%: {priceDiffPercent:.2f}%\n"
                         f"---------------------------------"
-                        f"Base Price: ${base_price / 100}\n"
+                        f"Base Price: ***${base_price / 100}***\n"
                         f"Diff (base): ${priceDiffBase / 100}\n"
                         f"Diff% (base): {priceDiffPercentBase:.2f}%\n"
                         f"---------------------------------"
@@ -279,7 +280,6 @@ class CsFloat:
                         #f"DB Price: {dbItemPrice}\n"
                         #f"Diff: {priceDiff}\n"
                         #f"Diff%: {priceDiffPercent:.2f}%\n"
-                        f"Item: {full_name}\n"
                         f"Float: {float}\n"
                         f"Offer Link: https://csfloat.com/item/{id}"
                     )
